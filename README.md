@@ -1,13 +1,13 @@
 # BMO - Modular AI Assistant
 
-BMO is a modular AI Assistant built with Python, leveraging **LangGraph** for orchestration, **LiteLLM** for model abstraction, and a dynamic **Plugin Registry** for skills.
+BMO is a modular AI Assistant built with Python, using **LangGraph** for orchestration, **LiteLLM** for model abstraction, and a dynamic **Plugin Registry** for skills.
 
 ## 🚀 Features
 
 - **Modular Architecture**: Easily extensible skill system.
 - **LangGraph Orchestration**: Robust state management and agent workflows.
 - **LiteLLM Integration**: Support for 100+ LLMs (OpenAI, Anthropic, Ollama, etc.).
-- **Dynamic Plugin Registry**: Auto-discovery of skills.
+- **Dynamic Plugin Registry**: Automatic skill discovery.
 
 ## 🛠️ Installation
 
@@ -35,13 +35,30 @@ BMO is a modular AI Assistant built with Python, leveraging **LangGraph** for or
 
 1. **Run the Assistant:**
    ```bash
-   export PYTHONPATH=$PYTHONPATH:$(pwd)/src
-   poetry run python src/BMO/main.py
+   export PYTHONPATH=$PYTHONPATH:$(pwd)/src && poetry run python src/BMO/main.py
+   ```
+
+### 🐳 Running with Docker
+
+You can also run BMO inside a Docker container.
+
+1. **Using Docker Compose (Recommended):**
+   ```bash
+   docker compose run --rm bmo
+   ```
+
+2. **Using Docker directly:**
+   ```bash
+   # Build the image
+   docker build -t bmo .
+
+   # Run the container
+   docker run -it --env-file .env bmo
    ```
 
 2. **Interact:**
    Type your query in the terminal.
-   - Example: *"Olá, qual é o sistema operacional desta máquina?"*
+   - Example: *"Hello, what is the OS of this machine?"*
    - Type `exit` or `quit` to stop.
 
 ## 🧩 Adding New Skills
@@ -49,11 +66,11 @@ BMO is a modular AI Assistant built with Python, leveraging **LangGraph** for or
 1. Create a new file in `src/BMO/skills/collection/`.
 2. Inherit from `BMO_skill`.
 3. Implement the `run` method and define `args_schema`.
-4. Register the skill at the bottom of the file:
+4. Register the skill at the end of the file:
    ```python
    registry.register(MyNewSkill())
    ```
-5. Import your new skill file in `src/BMO/core/orchestrator.py` to ensure it's loaded.
+5. Import your new skill file in `src/BMO/core/orchestrator.py` to ensure it is loaded.
 
 ## 📄 License
 

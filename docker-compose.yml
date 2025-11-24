@@ -1,0 +1,7 @@
+services:
+  bmo:
+    build: .
+    volumes:
+      - ./.env:/app/.env
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
