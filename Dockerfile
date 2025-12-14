@@ -10,7 +10,7 @@ ENV PYTHONUNBUFFERED=1 \
     POETRY_HOME="/opt/poetry" \
     POETRY_VIRTUALENVS_CREATE=false \
     POETRY_NO_INTERACTION=1 \
-    PYTHONPATH="/app/src"
+    PYTHONPATH="/app"
 
 # Add poetry to PATH
 ENV PATH="$POETRY_HOME/bin:$PATH"
@@ -18,8 +18,8 @@ ENV PATH="$POETRY_HOME/bin:$PATH"
 # Install system dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        curl \
-        build-essential \
+    curl \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Poetry

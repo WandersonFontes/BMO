@@ -72,6 +72,16 @@ def get_llm_client(
         "streaming": final_streaming,
         "temperature": final_temperature,
     }
+
+    # Inject API key if available
+    api_key: Optional[str] = None
+    if settings.LLM_PROVIDER == "openai":
+        api_key = settings.OPENAI_API_KEY
+    elif settings.LLM_PROVIDER == "anthropic":
+        api_key = settings.ANTHROPIC_API_KEY
+    
+    if api_key:
+        llm_config["api_key"] = api_key
     
     # Add any additional kwargs
     llm_config.update(additional_kwargs)
