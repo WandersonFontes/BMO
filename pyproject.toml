@@ -15,7 +15,8 @@ dependencies = [
     "pydantic (>=2.12.4,<3.0.0)",
     "pydantic-settings (>=2.12.0,<3.0.0)",
     "python-dotenv (>=1.2.1,<2.0.0)",
-    "langchain-litellm (>=0.3.2,<0.4.0)"
+    "langchain-litellm (>=0.3.2,<0.4.0)",
+    "langgraph (>=1.0.5,<2.0.0)"
 ]
 
 
