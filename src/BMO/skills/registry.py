@@ -247,6 +247,52 @@ class SkillRegistry:
         logger.debug(f"Registry contains {count} skills")
         return count
 
+    def discover_skills(self, package_path: str = "src.BMO.skills.collection") -> int:
+        """
+        Automatically discover and register skills from a package directory.
+        
+        Args:
+            package_path: Dot-notation path to the package containing skills.
+            
+        Returns:
+            Number of new skills discovered and registered.
+        """
+        import importlib
+        import pkgutil
+        
+        logger.info(f"Starting skill discovery in package: {package_path}")
+        discovered_count = 0
+        
+        try:
+            # Import the package to locate it
+            package = importlib.import_module(package_path)
+            
+            # Use pkgutil to find all modules in the package
+            if hasattr(package, '__path__'):
+                path = package.__path__
+            else:
+                logger.warning(f"{package_path} does not appear to be a package")
+                return 0
+
+            for _, name, _ in pkgutil.iter_modules(path):
+                full_module_name = f"{package_path}.{name}"
+                try:
+                    logger.debug(f"Importing module: {full_module_name}")
+                    importlib.import_module(full_module_name)
+                    discovered_count += 1
+                except Exception as e:
+                    logger.error(f"Failed to import skill module {full_module_name}: {e}")
+            
+            logger.info(f"Skill discovery completed. Processed {discovered_count} modules.")
+            return discovered_count
+            
+        except ImportError as e:
+            logger.error(f"Could not import skill package {package_path}: {e}")
+            return 0
+        except Exception as e:
+            logger.error(f"Unexpected error during skill discovery: {e}", exc_info=True)
+            return 0
+
     def __iter__(self) -> Iterator[Tuple[str, BMO_skill]]:
         """
         Allow iteration over registered skills.
@@ -323,3 +369,15 @@ def get_available_tools() -> List[BaseTool]:
         List of LangChain tools from all registered skills.
     """
     return registry.get_tools_list()
+
+def discover_skills(package_path: str = "src.BMO.skills.collection") -> int:
+    """
+    Convenience function to trigger skill discovery on the global registry.
+    
+    Args:
+        package_path: Dot-notation path to the package containing skills.
+        
+    Returns:
+        Number of modules processed.
+    """
+    return registry.discover_skills(package_path)
