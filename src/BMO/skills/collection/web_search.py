@@ -1,6 +1,8 @@
 import logging
-from typing import Optional, Dict, Any
+import json
+from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, Field, ValidationError
+from duckduckgo_search import DDGS
 
 from src.BMO.skills.base import BMO_skill
 from src.BMO.skills.registry import registry
@@ -27,11 +29,10 @@ class SearchInput(BaseModel):
 
 class WebSearchSkill(BMO_skill):
     """
-    Skill to perform web searches for current information.
+    Skill to perform web searches for current information using DuckDuckGo.
     
     This skill enables the assistant to search for real-time information,
     recent news, and current data that may not be in its training knowledge.
-    Can be extended with actual search API implementations.
     """
     
     name: str = "web_search"
@@ -51,58 +52,8 @@ class WebSearchSkill(BMO_skill):
             **kwargs: Arbitrary keyword arguments.
         """
         super().__init__(*args, **kwargs)
-        self._search_providers = ["duckduckgo", "google", "bing"]
+        self._search_providers = ["duckduckgo"]
         self._max_results = 5
-
-    def _simulate_search(self, query: str) -> str:
-        """
-        Simulate web search results for development and testing.
-        
-        In a production environment, this would be replaced with actual
-        search API calls to providers like DuckDuckGo, Serper, or others.
-        
-        Args:
-            query: The search query to simulate.
-            
-        Returns:
-            Simulated search results with relevant mock data.
-        """
-        # Common query patterns and their simulated responses
-        query_patterns: Dict[str, str] = {
-            "python": (
-                f"Search results for '{query}': Python 3.13 includes new features for better error messages, "
-                "performance improvements in the interpreter, and enhanced type system. The latest release "
-                "focuses on developer productivity and runtime efficiency."
-            ),
-            "weather": (
-                f"Search results for '{query}': Current weather information shows mild conditions across "
-                "most regions. For specific locations, real-time weather APIs would provide precise "
-                "temperature, precipitation, and forecast data."
-            ),
-            "news": (
-                f"Search results for '{query}': Top news stories cover technology advancements, "
-                "global events, and economic developments. Real search would provide current "
-                "headlines from reputable news sources."
-            ),
-            "ai": (
-                f"Search results for '{query}': Recent AI developments include new language models, "
-                "computer vision breakthroughs, and ethical AI discussions. The field continues "
-                "to evolve rapidly with new research papers weekly."
-            )
-        }
-        
-        # Find the best matching pattern or return generic response
-        query_lower = query.lower()
-        for pattern, response in query_patterns.items():
-            if pattern in query_lower:
-                return response
-        
-        # Generic response for unmatched queries
-        return (
-            f"Search results for '{query}': Found multiple relevant sources discussing this topic. "
-            "In a production environment, this would return actual web search results with "
-            "summaries and links to current information from reliable sources."
-        )
 
     def _validate_query(self, query: str) -> Optional[str]:
         """
@@ -127,21 +78,16 @@ class WebSearchSkill(BMO_skill):
 
     def run(self, query: str) -> str:
         """
-        Execute web search for the given query.
+        Execute web search for the given query using DuckDuckGo.
         
         Args:
             query: The search term or question to look up.
             
         Returns:
-            Search results as a formatted string. In simulation mode, returns
-            mock data. In production, would return actual search results.
+            Search results as a formatted string.
             
         Raises:
             ValidationError: If the query fails validation checks.
-            
-        Example:
-            >>> skill.run("Python 3.13 features")
-            'Search results for "Python 3.13 features": ...'
         """
         # Validate input
         validation_error = self._validate_query(query)
@@ -152,17 +98,39 @@ class WebSearchSkill(BMO_skill):
         logger.info(f"Executing web search for query: '{query}'")
         
         try:
-            # In a real implementation, this would call actual search APIs
-            # For now, we simulate the search behavior
-            results = self._simulate_search(query)
+            results = []
+            with DDGS() as ddgs:
+                # Use the 'text' method for standard search results
+                search_results = ddgs.text(
+                    keywords=query,
+                    max_results=self._max_results
+                )
+                
+                if search_results:
+                    for r in search_results:
+                        results.append({
+                            "title": r.get("title", "No Title"),
+                            "snippet": r.get("body", "No content"),
+                            "link": r.get("href", "#")
+                        })
             
-            logger.debug(f"Search completed for query: '{query}'")
-            return results
+            if not results:
+                return f"No results found for query: '{query}'"
+
+            # Format results for LLM consumption
+            formatted_output = f"Search Results for '{query}':\n\n"
+            for i, res in enumerate(results, 1):
+                formatted_output += f"{i}. {res['title']}\n"
+                formatted_output += f"   Source: {res['link']}\n"
+                formatted_output += f"   Summary: {res['snippet']}\n\n"
+                
+            logger.debug(f"Search completed for query: '{query}', found {len(results)} results")
+            return formatted_output
             
         except Exception as e:
             error_msg = f"Search operation failed: {str(e)}"
             logger.error(error_msg, exc_info=True)
-            return f"Search error: Unable to complete search at this time. Please try again later."
+            return f"Search error: Unable to complete search at this time. Please try again later. Error: {str(e)}"
 
     def get_search_providers(self) -> list[str]:
         """
