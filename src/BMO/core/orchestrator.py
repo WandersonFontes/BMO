@@ -30,27 +30,19 @@ def _import_skill_modules() -> None:
     """
     Import all skill modules to ensure they are registered with the registry.
     
-    This function explicitly imports skill collections to trigger their
-    registration decorators/mechanisms. New skill collections should be
-    added here as they are created.
-    
-    Raises:
-        ImportError: If any skill module fails to import, indicating
-                    potential configuration or dependency issues.
+    Uses the registry's auto-discovery mechanism to find plugins in the
+    collection directory.
     """
-    skill_modules: List[str] = [
-        "src.BMO.skills.collection.system_ops",
-        "src.BMO.skills.collection.web_search",
-        # Add new skill collections here as they are developed
-    ]
-    
-    for module_name in skill_modules:
-        try:
-            __import__(module_name, fromlist=[''])
-            logger.debug(f"Successfully imported skill module: {module_name}")
-        except ImportError as e:
-            logger.error(f"Failed to import skill module {module_name}: {e}")
-            raise
+    try:
+        # Dynamic discovery of skills
+        # We import inside function to avoid circular imports if any
+        from src.BMO.skills.registry import registry
+        count = registry.discover_skills("src.BMO.skills.collection")
+        logger.info(f"Discovered and potentially registered skills from {count} modules")
+        
+    except Exception as e:
+        logger.error(f"Failed to discover skills: {e}")
+        raise RuntimeError("Skill discovery failed") from e
 
 def _create_llm_with_tools() -> Any:
     """
