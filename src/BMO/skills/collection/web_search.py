@@ -2,7 +2,7 @@ import logging
 import json
 from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, Field, ValidationError
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 
 from src.BMO.skills.base import BMO_skill
 from src.BMO.skills.registry import registry
@@ -78,7 +78,7 @@ class WebSearchSkill(BMO_skill):
 
     def run(self, query: str) -> str:
         """
-        Execute web search for the given query using DuckDuckGo.
+        Execute web search for the given query using DuckDuckGo (ddgs).
         
         Args:
             query: The search term or question to look up.
@@ -99,10 +99,21 @@ class WebSearchSkill(BMO_skill):
         
         try:
             results = []
+            
+            # Heuristic for time-sensitive queries
+            timelimit = None
+            time_keywords = ["hoje", "agora", "today", "now", "current", "atual"]
+            if any(word in query.lower() for word in time_keywords):
+                timelimit = "d"  # Past day
+            
             with DDGS() as ddgs:
-                # Use the 'text' method for standard search results
+                # Use the 'text' method with region and timelimit
+                # Note: query is a positional argument in ddgs>=9.x
                 search_results = ddgs.text(
-                    keywords=query,
+                    query,
+                    region="br-pt",  # Focus on Brazil/Portuguese results
+                    safesearch="moderate",
+                    timelimit=timelimit,
                     max_results=self._max_results
                 )
                 
