@@ -8,7 +8,10 @@ BMO is a modular AI Assistant built with Python, using **LangGraph** for orchest
 - **LangGraph Orchestration**: Robust state management and agent workflows.
 - **LiteLLM Integration**: Support for 100+ LLMs (OpenAI, Anthropic, Ollama, etc.).
 - **Dynamic Plugin Registry**: Automatic skill discovery.
-- **HTTP API Layer**: Built with FastAPI, allowing easy integration with web and mobile frontends.
+- **HTTP API Layer**: Built with FastAPI for web/mobile integration.
+- **Production-Ready Docker**: Multi-stage builds, BuildKit caching, and `tini` for robust process management.
+- **Enterprise Persistence**: Support for both SQLite (local) and PostgreSQL (production).
+- **Automation Shortcuts**: `Makefile` included for rapid development and orchestration.
 
 ## 🛠️ Installation
 
@@ -18,19 +21,28 @@ BMO is a modular AI Assistant built with Python, using **LangGraph** for orchest
    cd BMO
    ```
 
-2. **Install dependencies with Poetry:**
+2. **Install dependencies:**
    ```bash
-   poetry install
+   make install
    ```
 
 3. **Configure Environment:**
-   Create a `.env` file in the root directory:
-   ```ini
-   LLM_PROVIDER=openai
-   LLM_MODEL=gpt-4o
-   OPENAI_API_KEY=sk-your-key-here
-   # DATABASE_URL=postgresql://user:pass@localhost:5432/bmo (Optional, defaults to SQLite)
+   ```bash
+   cp template.env .env
    ```
+
+## ⌨️ Shortcuts (Makefile)
+
+Use these commands for faster development:
+
+- `make run`: Starts the CLI.
+- `make run-api`: Starts the API server.
+- `make test`: Runs all tests.
+- `make up`: Starts the production environment (Postgres + API).
+- `make down`: Stops the production environment.
+- `make docker-logs`: View container logs.
+- `make clean`: Cleans up caches and temporary files.
+- `make help`: Shows all available commands.
 
 ## 🏃 Usage
 
@@ -38,52 +50,50 @@ BMO is a modular AI Assistant built with Python, using **LangGraph** for orchest
 
 1. **Run the Assistant:**
    ```bash
-   poetry run bmo
+   make run
    ```
 
 2. **Run with Persistence (Resume Conversations):**
-   To continue a previous conversation, use the `--session` argument:
    ```bash
-   poetry run bmo --session minha-conversa
+   make shell
    ```
+   *Note: This uses the `interactive-shell` session.*
 
 3. **Interact:**
-   Type your query in the terminal.
-   - Example: *"Hello, what is the OS of this machine?"*
-   - Type `/exit` or `/quit` to stop.
+   Type your query in the terminal. Use `/exit` to stop.
 
 ### API Mode (HTTP Server)
 
 1. **Run the API Server:**
    ```bash
-   poetry run uvicorn src.BMO.api.app:app --reload
+   make run-api
    ```
-   *The server will start at `http://localhost:8000`.*
 
 2. **Interactive Documentation:**
-   Open your browser at `http://localhost:8000/docs` to see the dynamic Swagger UI.
+   Open `http://localhost:8000/docs` for the Swagger UI.
 
 3. **Core Endpoints:**
-   - `POST /v1/chat`: Send a message and get an AI response.
-   - `GET /v1/history/{session_id}`: Retrieve message history for a specific session.
-   - `GET /v1/health`: Check status.
+   - `POST /v1/chat`: Message interaction.
+   - `GET /v1/history/{session_id}`: Context retrieval.
 
-### 🐳 Running with Docker
+### 🐳 Production with Docker
 
-You can also run BMO inside a Docker container.
+BMO is optimized for production containerization.
 
-1. **Using Docker Compose (Recommended):**
+1. **Using Docker Compose (PostgreSQL Persistent):**
    ```bash
-   docker compose run --rm bmo
+   make up
+   ```
+   *This starts the API server and a healthy PostgreSQL instance.*
+
+2. **View Logs:**
+   ```bash
+   make docker-logs
    ```
 
-2. **Using Docker directly:**
+3. **Manual Build:**
    ```bash
-   # Build the image
    docker build -t bmo .
-
-   # Run the container
-   docker run -it --env-file .env bmo
    ```
 
 ## 🧩 Adding New Skills
@@ -92,13 +102,12 @@ BMO uses dynamic skill discovery. To add a new skill:
 
 1. Create a new file in `src/BMO/skills/collection/` (e.g., `my_skill.py`).
 2. Inherit from `BMO_skill`.
-3. Implement the `run` method and define `args_schema` (a Pydantic model).
-4. Register the skill instance at the end of your file:
+3. Implement the `run` method and `args_schema`.
+4. Register the skill instance:
    ```python
    from src.BMO.skills.registry import registry
    registry.register(MyNewSkill())
    ```
-   *Note: BMO will automatically discover and load any skill file in the collection directory.*
 
 ## 📄 License
 
