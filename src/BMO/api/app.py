@@ -31,9 +31,9 @@ def create_app() -> FastAPI:
     async def startup_event():
         logger = logging.getLogger("src.BMO.api")
         logger.info("BMO API is starting up...")
-        # Pre-build graph to warm up on startup
-        from src.BMO.core.orchestrator import get_compiled_graph
-        get_compiled_graph()
+        # Supervisor will be initialized on first use or here if desired
+        from src.BMO.orchestrator.supervisor import Supervisor
+        Supervisor() # Pre-warm LLM clients if needed
 
     return app
 

@@ -15,93 +15,83 @@ import logging
 from typing import Optional, List, Dict, Any, Set
 from langchain_core.messages import HumanMessage, BaseMessage
 
-from src.BMO.core.orchestrator import build_graph
+import asyncio
+from src.BMO.orchestrator.supervisor import Supervisor
 from src.BMO.config.settings import settings
 
 # Configure logger
 logger = logging.getLogger(__name__)
-
 
 class BMOSession:
     """
     Represents a single user session with BMO assistant.
     
     Handles session state, conversation history, and provides methods
-    for interacting with the LangGraph workflow.
-    
-    Attributes:
-        session_id: Unique identifier for the session.
-        graph: Compiled LangGraph workflow instance.
-        config: Runtime configuration for graph execution.
-        message_history: List of messages in the current session.
-        
-    Example:
-        >>> session = BMOSession()
-        >>> response = session.send_message("Hello, BMO!")
+    for interacting with the A2A Supervisor.
     """
     
     def __init__(self, session_id: Optional[str] = None):
         """
         Initialize a new BMO session.
-        
-        Args:
-            session_id: Optional custom session ID. If not provided,
-                       a UUID4 will be generated automatically.
         """
         self.session_id: str = session_id or str(uuid.uuid4())
-        self.graph: LangGraph = build_graph()
-        self.config: Dict[str, Any] = {"configurable": {"thread_id": self.session_id}}
+        self.supervisor = Supervisor()
         self.message_history: List[BaseMessage] = []
+        
+        # Ensure we have an event loop for this session
+        try:
+            self.loop = asyncio.get_event_loop()
+        except RuntimeError:
+            self.loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.loop)
         
         logger.info(f"Initialized BMO session: {self.session_id}")
 
     def send_message(self, user_input: str) -> str:
         """
         Send a message to BMO and get the response.
-        
-        Args:
-            user_input: The user's message text.
-            
-        Returns:
-            BMO's response as a string.
-            
-        Raises:
-            RuntimeError: If the graph fails to process the message.
         """
         try:
             # Create human message
             human_message: HumanMessage = HumanMessage(content=user_input)
             self.message_history.append(human_message)
             
-            # Prepare inputs for graph
-            inputs: Dict[str, Any] = {"messages": [human_message]}
+            # Execute async supervisor
+            response_text = self.loop.run_until_complete(self._process_message(user_input))
             
-            # Stream the response
-            response_parts: List[str] = []
-            for event in self.graph.stream(inputs, config=self.config, stream_mode="values"):
-                message: BaseMessage = event["messages"][-1]
-                if message.type == "ai" and message.content:
-                    response_parts.append(message.content)
-                    # Update message history with AI response
-                    if message not in self.message_history:
-                        self.message_history.append(message)
+            # Append AI response
+            ai_message = BaseMessage(content=response_text, type="ai")
+            self.message_history.append(ai_message)
             
-            full_response: str = "".join(response_parts)
-            logger.debug(f"Session {self.session_id}: Processed user message, response length: {len(full_response)}")
-            
-            return full_response
+            return response_text
             
         except Exception as e:
             error_msg: str = f"Failed to process message: {str(e)}"
             logger.error(f"Session {self.session_id}: {error_msg}", exc_info=True)
             raise RuntimeError(error_msg) from e
 
+    async def _process_message(self, user_input: str) -> str:
+        final_state = await self.supervisor.ainvoke(user_input)
+        
+        # Formulate final response from step results
+        steps = final_state.get("plan", {}).steps
+        step_results = final_state.get("step_results", {})
+        
+        summary = ["Task Completed via A2A Orchestration:\n"]
+        for step in steps:
+             s_id = getattr(step, 'step_id', None)
+             # step_results keys might be step_id or something else?
+             # In supervisor.py, I used `step_id = step.step_id ...`.
+             # ExecutionStep schema has step_id (Step 17).
+             result = step_results.get(s_id)
+             if result:
+                 summary.append(f"Step '{step.intent}': {result.output.get('summary', result.output)}")
+        
+        return "\n".join(summary)
+
     def get_session_info(self) -> Dict[str, Any]:
         """
         Get information about the current session.
-        
-        Returns:
-            Dictionary containing session metadata.
         """
         return {
             "session_id": self.session_id,

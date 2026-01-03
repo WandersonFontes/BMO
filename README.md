@@ -1,114 +1,129 @@
-# BMO - Modular AI Assistant
+# BMO - Assistente de IA Multi-Agente (A2A)
 
-BMO is a modular AI Assistant built with Python, using **LangGraph** for orchestration, **LiteLLM** for model abstraction, and a dynamic **Plugin Registry** for skills.
+BMO é um Assistente de IA modular e multi-agente construído com Python, utilizando **Orquestração Hierárquica de Agentes (A2A)**. Ele aproveita o **LangGraph** para roteamento determinístico, **LiteLLM** para abstração de modelos e um **Registro de Plugins** dinâmico para habilidades (skills).
 
-## 🚀 Features
+## 🚀 Principais Funcionalidades
 
-- **Modular Architecture**: Easily extensible skill system.
-- **LangGraph Orchestration**: Robust state management and agent workflows.
-- **LiteLLM Integration**: Support for 100+ LLMs (OpenAI, Anthropic, Ollama, etc.).
-- **Dynamic Plugin Registry**: Automatic skill discovery.
-- **HTTP API Layer**: Built with FastAPI for web/mobile integration.
-- **Production-Ready Docker**: Multi-stage builds, BuildKit caching, and `tini` for robust process management.
-- **Enterprise Persistence**: Support for both SQLite (local) and PostgreSQL (production).
-- **Automation Shortcuts**: `Makefile` included for rapid development and orchestration.
+- **Orquestração A2A Hierárquica**: Uma arquitetura poderosa de Planejador-Supervisor-Agente para resolução de tarefas complexas.
+- **Agentes Especializados**:
+  - 🔍 **Researcher**: Pesquisa web e verificação de fatos.
+  - ✍️ **Writer**: Síntese, documentação e conversas amigáveis.
+  - 💻 **Coder**: Operações de sistema, gerenciamento de arquivos e geração de código.
+  - ⚖️ **Critic**: Loop contínuo de garantia de qualidade e autocorreção.
+- **Otimização de Caminho Rápido (Fast Path)**: Respostas instantâneas para saudações e conversas simples, pulando o loop pesado de orquestração.
+- **Sistema de Skills Modular**: Arquitetura de plugins facilmente extensível via `SkillRegistry`.
+- **Integração LiteLLM**: Suporte para mais de 100 LLMs (OpenAI, Anthropic, Gemini, etc.).
+- **Camada de API HTTP**: Construída com FastAPI para integração web/mobile.
+- **Docker Pronto para Produção**: Builds multi-estágio, cache BuildKit e `tini` para gerenciamento robusto de processos.
+- **Camada de Persistência**: Suporte para SQLite (desenvolvimento) e PostgreSQL (produção).
+- **Atalhos de Automação**: `Makefile` abrangente para desenvolvimento rápido.
 
-## 🛠️ Installation
+## 🧠 Como Funciona (Arquitetura A2A)
 
-1. **Clone the repository:**
+O BMO segue um modelo hierárquico **Agente-para-Agente (A2A)**:
+1. **Planejador (Planner)**: Analisa sua entrada e cria um `ExecutionPlan` estruturado.
+2. **Supervisor**: Um orquestrador LangGraph que gerencia a máquina de estados.
+3. **Agentes Especializados**: Executam etapas específicas (pesquisa, código, escrita).
+4. **Crítico (Critic)**: Revisa automaticamente cada saída dos agentes. Se não estiver perfeita, fornece feedback e envia o agente de volta para uma nova tentativa (até 3 vezes).
+
+**Modo de Conversação**: Para saudações simples ou bate-papo, o BMO ativa um **Caminho Rápido (Fast Path)** que pula a revisão do Crítico, garantindo tempos de resposta de 0.5s-1s.
+
+## 🛠️ Instalação
+
+1. **Clone o repositório:**
    ```bash
    git clone https://github.com/WandersonFontes/BMO.git
    cd BMO
    ```
 
-2. **Install dependencies:**
+2. **Instale as dependências:**
    ```bash
    make install
    ```
 
-3. **Configure Environment:**
+3. **Configure o ambiente:**
    ```bash
    cp template.env .env
    ```
 
-## ⌨️ Shortcuts (Makefile)
+## ⌨️ Atalhos (Makefile)
 
-Use these commands for faster development:
+Use estes comandos para um desenvolvimento mais rápido:
 
-- `make run`: Starts the CLI.
-- `make run-api`: Starts the API server.
-- `make test`: Runs all tests.
-- `make up`: Starts the production environment (Postgres + API).
-- `make down`: Stops the production environment.
-- `make docker-logs`: View container logs.
-- `make clean`: Cleans up caches and temporary files.
-- `make help`: Shows all available commands.
+- `make run`: Inicia a CLI.
+- `make run-api`: Inicia o servidor da API.
+- `make test`: Executa todos os testes.
+- `make up`: Inicia o ambiente de produção (Postgres + API).
+- `make down`: Para o ambiente de produção.
+- `make logs`: Visualiza os logs do Docker.
+- `make clean`: Limpa caches e arquivos temporários.
+- `make help`: Mostra todos os comandos disponíveis.
 
-## 🏃 Usage
+## 🏃 Uso
 
-### CLI Mode (Terminal)
+### Modo CLI (Terminal)
 
-1. **Run the Assistant:**
+1. **Execute o Assistente:**
    ```bash
    make run
    ```
 
-2. **Run with Persistence (Resume Conversations):**
+2. **Execute com Persistência (Retomar Conversas):**
    ```bash
    make shell
    ```
-   *Note: This uses the `interactive-shell` session.*
+   *Nota: Isso utiliza a sessão `interactive-shell` session.*
 
-3. **Interact:**
-   Type your query in the terminal. Use `/exit` to stop.
+3. **Interaja:**
+   Digite sua consulta no terminal. Use `/exit` para parar.
 
-### API Mode (HTTP Server)
+### Modo API (Servidor HTTP)
 
-1. **Run the API Server:**
+1. **Execute o Servidor API:**
    ```bash
    make run-api
    ```
 
-2. **Interactive Documentation:**
-   Open `http://localhost:8000/docs` for the Swagger UI.
+2. **Documentação Interativa:**
+   Abra `http://localhost:8000/docs` para a interface Swagger.
 
-3. **Core Endpoints:**
-   - `POST /v1/chat`: Message interaction.
-   - `GET /v1/history/{session_id}`: Context retrieval.
+3. **Endpoints Principais:**
+   - `POST /v1/chat`: Interação de mensagens.
+   - `GET /v1/history/{session_id}`: Recuperação de contexto.
 
-### 🐳 Production with Docker
+### 🐳 Produção com Docker
 
-BMO is optimized for production containerization.
+O BMO é otimizado para conteinerização em produção.
 
-1. **Using Docker Compose (PostgreSQL Persistent):**
+1. **Usando Docker Compose (PostgreSQL Persistente):**
    ```bash
    make up
    ```
-   *This starts the API server and a healthy PostgreSQL instance.*
+   *Isso inicia o servidor API e uma instância saudável do PostgreSQL.*
 
-2. **View Logs:**
+2. **Ver Logs:**
    ```bash
-   make docker-logs
+   make logs
    ```
 
-3. **Manual Build:**
+3. **Build Manual:**
    ```bash
    docker build -t bmo .
    ```
 
-## 🧩 Adding New Skills
+## 🧩 Adicionando Novas Skills
 
-BMO uses dynamic skill discovery. To add a new skill:
+O BMO utiliza descoberta dinâmica de habilidades. Para adicionar uma nova skill:
 
-1. Create a new file in `src/BMO/skills/collection/` (e.g., `my_skill.py`).
-2. Inherit from `BMO_skill`.
-3. Implement the `run` method and `args_schema`.
-4. Register the skill instance:
+1. Crie um novo arquivo em `src/BMO/skills/collection/` (ex: `minha_skill.py`).
+2. Herde de `BMO_skill`.
+3. Implemente o método `run` e o `args_schema`.
+4. Registre a instância da skill:
    ```python
    from src.BMO.skills.registry import registry
-   registry.register(MyNewSkill())
+   registry.register(MinhaNovaSkill())
    ```
 
-## 📄 License
+## 📄 Licença
 
 [MIT](LICENSE)
