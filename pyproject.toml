@@ -19,6 +19,8 @@ dependencies = [
     "langgraph (>=1.0.5,<2.0.0)",
     "ddgs (>=9.10.0,<10.0.0)",
     "langgraph-checkpoint-sqlite (>=3.0.1,<4.0.0)",
+    "fastapi (>=0.128.0,<0.129.0)",
+    "uvicorn (>=0.40.0,<0.41.0)",
 ]
 
 [tool.poetry]
@@ -26,6 +28,7 @@ packages = [{include = "BMO", from = "src"}]
 
 [tool.poetry.scripts]
 bmo = "BMO.main:main"
+api = "uvicorn:run"
 
 
 [build-system]
