@@ -23,6 +23,10 @@ class SystemManagerFilesInput(BaseModel):
         description="Action to perform on the file.",
         examples=["create", "delete", "read", "write"]
     )
+    content: Optional[str] = Field(
+        default=None,
+        description="Content to write to the file (used with 'create' and 'write' actions)."
+    )
 
 
 class SystemInfoSkill(BMO_skill):
@@ -70,12 +74,13 @@ class SystemManagerFilesSkill(BMO_skill):
     description: str = "Perform file operations (create, read, write, delete) on the system."
     args_schema: type[BaseModel] = SystemManagerFilesInput
 
-    def _create_file(self, path: str) -> str:
+    def _create_file(self, path: str, content: Optional[str] = None) -> str:
         """
         Create a new file at specified path.
         
         Args:
             path: File path where the file should be created.
+            content: Initial content for the file.
             
         Returns:
             Success message with file path.
@@ -90,7 +95,8 @@ class SystemManagerFilesSkill(BMO_skill):
         
         try:
             file_path.parent.mkdir(parents=True, exist_ok=True)
-            file_path.write_text("Created by BMO", encoding='utf-8')
+            text_to_write = content if content is not None else "Created by BMO"
+            file_path.write_text(text_to_write, encoding='utf-8')
             return f"File successfully created at {path}"
         except OSError as e:
             return f"Error creating file: {str(e)}"
@@ -140,12 +146,13 @@ class SystemManagerFilesSkill(BMO_skill):
         except OSError as e:
             return f"Error reading file: {str(e)}"
 
-    def _write_file(self, path: str) -> str:
+    def _write_file(self, path: str, content: Optional[str] = None) -> str:
         """
         Write content to file at specified path.
         
         Args:
             path: Path to file to be written.
+            content: Content to write to the file.
             
         Returns:
             Success message or error description.
@@ -154,18 +161,20 @@ class SystemManagerFilesSkill(BMO_skill):
         
         try:
             file_path.parent.mkdir(parents=True, exist_ok=True)
-            file_path.write_text("Written by BMO", encoding='utf-8')
+            text_to_write = content if content is not None else "Written by BMO"
+            file_path.write_text(text_to_write, encoding='utf-8')
             return f"File successfully written at {path}"
         except OSError as e:
             return f"Error writing file: {str(e)}"
 
-    def run(self, path: str = "", action: str = "create") -> str:
+    def run(self, path: str = "", action: str = "create", content: Optional[str] = None) -> str:
         """
         Execute requested file operation.
         
         Args:
             path: File path for the operation.
             action: Operation to perform (create, read, write, delete).
+            content: Content for the file (for create/write).
             
         Returns:
             Operation result or error message.
@@ -187,6 +196,10 @@ class SystemManagerFilesSkill(BMO_skill):
             return "Error: File path cannot be empty"
 
         handler = action_handlers[action]
+        
+        # Call handler with content if it's create or write
+        if action in ["create", "write"]:
+            return handler(path, content)
         return handler(path)
 
 # Auto-register skills with the registry
