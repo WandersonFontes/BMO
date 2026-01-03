@@ -5,6 +5,8 @@ from langchain_core.messages import BaseMessage, SystemMessage
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.postgres import PostgresSaver
+from psycopg_pool import ConnectionPool
 from langgraph.graph.message import add_messages
 from langchain_litellm import ChatLiteLLM
 from langchain_core.tools import BaseTool
@@ -153,42 +155,43 @@ def _build_workflow_structure(llm_with_tools: ChatLiteLLM) -> StateGraph[AgentSt
 
 # Global checkpointer instances to maintain connection lifecycle
 _conn: Optional[sqlite3.Connection] = None
-_checkpointer: Optional[SqliteSaver] = None
+_pool: Optional[ConnectionPool] = None
+_checkpointer: Optional[Any] = None
 
-def _get_checkpointer() -> SqliteSaver:
+def _get_checkpointer() -> Any:
     """
-    Get or create the persistent SQLite checkpointer.
-    
-    Manages a direct sqlite3 connection to ensure stability and
-    persistence for the compiled graph.
+    Get or create the persistent checkpointer (SQLite or Postgres).
     
     Returns:
-        Active SqliteSaver instance.
+        Active checkpointer instance (SqliteSaver or PostgresSaver).
     """
-    global _conn, _checkpointer
+    global _conn, _pool, _checkpointer
     
     if _checkpointer is None:
         try:
-            settings.ensure_database_dir()
             db_path = settings.EFFECTIVE_DATABASE_URL
             
-            # Defensive check: if we have a postgres URL but are using SqliteSaver, 
-            # fall back to the default SQLite path to avoid OperationalError.
             if db_path.startswith("postgresql://") or db_path.startswith("postgres://"):
-                logger.warning(f"Incompatible DATABASE_URL for SQLite: {db_path}. Falling back to {settings.DATABASE_PATH}")
-                db_path = settings.DATABASE_PATH
-
-            logger.info(f"Initializing SqliteSaver with direct connection to: {db_path}")
-            # Ensure we are using a simple file path for sqlite3.connect
-            if db_path.startswith("sqlite:///"):
-                db_path = db_path.replace("sqlite:///", "")
-            
-            _conn = sqlite3.connect(db_path, check_same_thread=False)
-            _checkpointer = SqliteSaver(_conn)
+                logger.info("Initializing PostgresSaver for persistence")
+                _pool = ConnectionPool(conninfo=db_path, max_size=20, kwargs={"autocommit": True})
+                _checkpointer = PostgresSaver(_pool)
+                # Ensure tables exist
+                _checkpointer.setup()
+            else:
+                settings.ensure_database_dir()
+                logger.info(f"Initializing SqliteSaver with direct connection to: {db_path}")
+                # Ensure we are using a simple file path for sqlite3.connect
+                if db_path.startswith("sqlite:///"):
+                    db_path = db_path.replace("sqlite:///", "")
+                
+                _conn = sqlite3.connect(db_path, check_same_thread=False)
+                _checkpointer = SqliteSaver(_conn)
         except Exception as e:
-            logger.error(f"Failed to initialize SqliteSaver: {e}")
+            logger.error(f"Failed to initialize checkpointer: {e}")
             if _conn:
                 _conn.close()
+            if _pool:
+                _pool.close()
             raise RuntimeError(f"Database initialization failed: {e}") from e
             
     return _checkpointer

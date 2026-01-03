@@ -1,0 +1,54 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Environment & Private
+.env
+.env.*
+template.env
+persistence/
+
+# Project
+README.md
+docs/
+tests/
+scripts/
+.agent/
+.gemini/
+.cursor/
