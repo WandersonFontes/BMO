@@ -32,7 +32,7 @@ up: ## Build and start production environment (Docker Compose)
 down: ## Stop production environment
 	docker compose down
 
-docker-logs: ## View Docker logs
+logs: ## View Docker logs
 	docker compose logs -f bmo
 
 clean: ## Clean temporary files and caches
