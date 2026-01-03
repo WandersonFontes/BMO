@@ -7,6 +7,7 @@ and response streaming with comprehensive error handling and user experience
 considerations.
 """
 
+import argparse
 import uuid
 import sys
 import signal
@@ -124,8 +125,14 @@ class BMOCLI:
     management, command processing, and graceful shutdown handling.
     """
     
-    def __init__(self):
-        """Initialize the CLI interface."""
+    def __init__(self, session_id: Optional[str] = None):
+        """
+        Initialize the CLI interface.
+        
+        Args:
+            session_id: Optional fixed session ID to use for persistence.
+        """
+        self.initial_session_id: Optional[str] = session_id
         self.session: Optional[BMOSession] = None
         self.running: bool = False
         self._setup_signal_handlers()
@@ -165,7 +172,7 @@ class BMOCLI:
         print("🚀 Initializing BMO Assistant...")
         
         try:
-            self.session: Optional[BMOSession] = BMOSession()
+            self.session: Optional[BMOSession] = BMOSession(session_id=self.initial_session_id)
             self.running: bool = True
             
             self._show_welcome_message()
@@ -321,15 +328,15 @@ Just type normally to chat with BMO!
 def main() -> None:
     """
     Main entry point for BMO Assistant CLI.
-    
-    This function initializes and starts the BMO CLI interface with
-    proper error handling and resource management.
-    
-    Example:
-        $ python -m src.BMO.main
-        🚀 Initializing BMO Assistant...
-        🤖 BMO Assistant Ready! (Session: abc123...)
     """
+    parser = argparse.ArgumentParser(description="BMO Assistant CLI")
+    parser.add_argument(
+        "--session", 
+        type=str, 
+        help="Custom session ID for persistence. Use the same name to continue a conversation."
+    )
+    args = parser.parse_args()
+
     try:
         # Configure logging based on settings
         logging.basicConfig(
@@ -337,10 +344,10 @@ def main() -> None:
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         )
         
-        logger.info("Starting BMO Assistant CLI")
+        logger.info(f"Starting BMO Assistant CLI (Session: {args.session or 'New'})")
         
         # Create and start CLI
-        cli: BMOCLI = BMOCLI()
+        cli: BMOCLI = BMOCLI(session_id=args.session)
         cli.start()
         
     except Exception as e:
