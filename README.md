@@ -8,6 +8,7 @@ BMO is a modular AI Assistant built with Python, using **LangGraph** for orchest
 - **LangGraph Orchestration**: Robust state management and agent workflows.
 - **LiteLLM Integration**: Support for 100+ LLMs (OpenAI, Anthropic, Ollama, etc.).
 - **Dynamic Plugin Registry**: Automatic skill discovery.
+- **HTTP API Layer**: Built with FastAPI, allowing easy integration with web and mobile frontends.
 
 ## 🛠️ Installation
 
@@ -33,6 +34,8 @@ BMO is a modular AI Assistant built with Python, using **LangGraph** for orchest
 
 ## 🏃 Usage
 
+### CLI Mode (Terminal)
+
 1. **Run the Assistant:**
    ```bash
    poetry run bmo
@@ -43,6 +46,27 @@ BMO is a modular AI Assistant built with Python, using **LangGraph** for orchest
    ```bash
    poetry run bmo --session minha-conversa
    ```
+
+3. **Interact:**
+   Type your query in the terminal.
+   - Example: *"Hello, what is the OS of this machine?"*
+   - Type `/exit` or `/quit` to stop.
+
+### API Mode (HTTP Server)
+
+1. **Run the API Server:**
+   ```bash
+   poetry run uvicorn src.BMO.api.app:app --reload
+   ```
+   *The server will start at `http://localhost:8000`.*
+
+2. **Interactive Documentation:**
+   Open your browser at `http://localhost:8000/docs` to see the dynamic Swagger UI.
+
+3. **Core Endpoints:**
+   - `POST /v1/chat`: Send a message and get an AI response.
+   - `GET /v1/history/{session_id}`: Retrieve message history for a specific session.
+   - `GET /v1/health`: Check status.
 
 ### 🐳 Running with Docker
 
@@ -61,11 +85,6 @@ You can also run BMO inside a Docker container.
    # Run the container
    docker run -it --env-file .env bmo
    ```
-
-2. **Interact:**
-   Type your query in the terminal.
-   - Example: *"Hello, what is the OS of this machine?"*
-   - Type `exit` or `quit` to stop.
 
 ## 🧩 Adding New Skills
 
