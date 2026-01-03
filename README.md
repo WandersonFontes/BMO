@@ -28,14 +28,20 @@ BMO is a modular AI Assistant built with Python, using **LangGraph** for orchest
    LLM_PROVIDER=openai
    LLM_MODEL=gpt-4o
    OPENAI_API_KEY=sk-your-key-here
-   DATABASE_URL=postgresql://user:pass@localhost:5432/bmo
+   # DATABASE_URL=postgresql://user:pass@localhost:5432/bmo (Optional, defaults to SQLite)
    ```
 
 ## 🏃 Usage
 
 1. **Run the Assistant:**
    ```bash
-   export PYTHONPATH=$PYTHONPATH:$(pwd)/src && poetry run python src/BMO/main.py
+   poetry run bmo
+   ```
+
+2. **Run with Persistence (Resume Conversations):**
+   To continue a previous conversation, use the `--session` argument:
+   ```bash
+   poetry run bmo --session minha-conversa
    ```
 
 ### 🐳 Running with Docker
@@ -63,14 +69,17 @@ You can also run BMO inside a Docker container.
 
 ## 🧩 Adding New Skills
 
-1. Create a new file in `src/BMO/skills/collection/`.
+BMO uses dynamic skill discovery. To add a new skill:
+
+1. Create a new file in `src/BMO/skills/collection/` (e.g., `my_skill.py`).
 2. Inherit from `BMO_skill`.
-3. Implement the `run` method and define `args_schema`.
-4. Register the skill at the end of the file:
+3. Implement the `run` method and define `args_schema` (a Pydantic model).
+4. Register the skill instance at the end of your file:
    ```python
+   from src.BMO.skills.registry import registry
    registry.register(MyNewSkill())
    ```
-5. Import your new skill file in `src/BMO/core/orchestrator.py` to ensure it is loaded.
+   *Note: BMO will automatically discover and load any skill file in the collection directory.*
 
 ## 📄 License
 

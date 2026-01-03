@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     
     # Application Configuration
+    DATABASE_PATH: str = "persistence/bmo_history.sqlite"
     DATABASE_URL: Optional[str] = None
     SYSTEM_PROMPT: str = (
         "You are BMO, a helpful and modular AI Assistant. "
@@ -173,6 +174,23 @@ class Settings(BaseSettings):
         elif self.LLM_PROVIDER == "anthropic":
             required_keys["ANTHROPIC_API_KEY"] = self.ANTHROPIC_API_KEY
         return required_keys
+
+    @property
+    def EFFECTIVE_DATABASE_URL(self) -> str:
+        """Get the effective database URL or path."""
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        return self.DATABASE_PATH
+
+    def ensure_database_dir(self) -> None:
+        """Ensure the directory for the database exists."""
+        db_dir = os.path.dirname(self.DATABASE_PATH)
+        if db_dir and not os.path.exists(db_dir):
+            try:
+                os.makedirs(db_dir, exist_ok=True)
+                logger.info(f"Created database directory: {db_dir}")
+            except OSError as e:
+                logger.error(f"Failed to create database directory {db_dir}: {e}")
 
     def is_configuration_valid(self) -> bool:
         """
