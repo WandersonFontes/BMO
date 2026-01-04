@@ -113,16 +113,20 @@ O BMO é otimizado para conteinerização em produção.
 
 ## 🧩 Adicionando Novas Skills
 
-O BMO utiliza descoberta dinâmica de habilidades. Para adicionar uma nova skill:
+O BMO utiliza um sistema de registro explícito para maior segurança e estabilidade. Para adicionar uma nova skill:
 
 1. Crie um novo arquivo em `src/BMO/skills/collection/` (ex: `minha_skill.py`).
-2. Herde de `BMO_skill`.
-3. Implemente o método `run` e o `args_schema`.
-4. Registre a instância da skill:
+2. Herde de `BMO_skill` e implemente o método `run` e o `args_schema`.
+3. Adicione sua classe de skill ao arquivo `src/BMO/skills/registry_manifest.py`:
    ```python
-   from src.BMO.skills.registry import registry
-   registry.register(MinhaNovaSkill())
+   from .collection.minha_skill import MinhaNovaSkill
+   
+   SKILL_CLASSES = [
+       # ... skills existentes
+       MinhaNovaSkill,
+   ]
    ```
+4. O sistema carregará a skill automaticamente na próxima inicialização.
 
 ## 📄 Licença
 

@@ -5,7 +5,6 @@ from pydantic import BaseModel, Field, ValidationError
 from ddgs import DDGS
 
 from src.BMO.skills.base import BMO_skill
-from src.BMO.skills.registry import registry
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -163,7 +162,3 @@ class WebSearchSkill(BMO_skill):
             self._max_results = max_results
         else:
             logger.warning(f"Invalid max_results value: {max_results}. Must be between 1-20.")
-
-
-# Auto-register the skill with the registry
-registry.register(WebSearchSkill())

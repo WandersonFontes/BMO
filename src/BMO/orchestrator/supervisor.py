@@ -11,16 +11,15 @@ from ..agents.coder import CoderAgent
 from ..agents.critic import CriticAgent
 from .planner import Planner
 
-# Registry of available agents
-agents_map = {
-    "researcher": ResearcherAgent(),
-    "writer": WriterAgent(),
-    "coder": CoderAgent(),
-    "critic": CriticAgent()
-}
-
 class Supervisor:
     def __init__(self):
+        # Registry of available agents
+        self.agents_map = {
+            "researcher": ResearcherAgent(),
+            "writer": WriterAgent(),
+            "coder": CoderAgent(),
+            "critic": CriticAgent()
+        }
         self.planner = Planner()
         self.workflow = self._build_graph()
 
@@ -111,7 +110,7 @@ class Supervisor:
         # User Feedback: Visibility
         # print(f"🔄 Executing Step {idx+1}/{len(plan.steps)}: {step.agent} (Attempt {retry_idx + 1})")
 
-        agent = agents_map[step.agent]
+        agent = self.agents_map[step.agent]
         
         payload = {"instruction": step.instruction}
         if feedback:
@@ -152,7 +151,7 @@ class Supervisor:
         step = plan.steps[idx]
         
         # print(f"⚖️  Critic Reviewing Step {idx+1}...")
-        critic = agents_map["critic"]
+        critic = self.agents_map["critic"]
         
         msg = A2AMessage(
             correlation_id=state["correlation_id"],

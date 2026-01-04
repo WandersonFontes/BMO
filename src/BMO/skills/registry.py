@@ -247,51 +247,31 @@ class SkillRegistry:
         logger.debug(f"Registry contains {count} skills")
         return count
 
-    def discover_skills(self, package_path: str = "src.BMO.skills.collection") -> int:
+    def load_manifest(self) -> int:
         """
-        Automatically discover and register skills from a package directory.
+        Explicitly load and register skills from the registry manifest.
         
-        Args:
-            package_path: Dot-notation path to the package containing skills.
-            
+        This replaces the dynamic discovery mechanism with explicit dependency injection,
+        improving security, reliability, and supporting tree shaking.
+        
         Returns:
-            Number of new skills discovered and registered.
+            Number of skills successfully registered from the manifest.
         """
-        import importlib
-        import pkgutil
+        from .registry_manifest import SKILL_CLASSES
         
-        logger.info(f"Starting skill discovery in package: {package_path}")
-        discovered_count = 0
+        logger.info(f"Starting explicit skill registration from manifest")
+        registered_count = 0
         
-        try:
-            # Import the package to locate it
-            package = importlib.import_module(package_path)
-            
-            # Use pkgutil to find all modules in the package
-            if hasattr(package, '__path__'):
-                path = package.__path__
-            else:
-                logger.warning(f"{package_path} does not appear to be a package")
-                return 0
-
-            for _, name, _ in pkgutil.iter_modules(path):
-                full_module_name = f"{package_path}.{name}"
-                try:
-                    logger.debug(f"Importing module: {full_module_name}")
-                    importlib.import_module(full_module_name)
-                    discovered_count += 1
-                except Exception as e:
-                    logger.error(f"Failed to import skill module {full_module_name}: {e}")
-            
-            logger.info(f"Skill discovery completed. Processed {discovered_count} modules.")
-            return discovered_count
-            
-        except ImportError as e:
-            logger.error(f"Could not import skill package {package_path}: {e}")
-            return 0
-        except Exception as e:
-            logger.error(f"Unexpected error during skill discovery: {e}", exc_info=True)
-            return 0
+        for skill_cls in SKILL_CLASSES:
+            try:
+                skill_instance = skill_cls()
+                if self.register(skill_instance):
+                    registered_count += 1
+            except Exception as e:
+                logger.error(f"Failed to register skill class {skill_cls.__name__}: {e}")
+        
+        logger.info(f"Manifest loading completed. Registered {registered_count} skills.")
+        return registered_count
 
     def __iter__(self) -> Iterator[Tuple[str, BMO_skill]]:
         """
@@ -370,14 +350,11 @@ def get_available_tools() -> List[BaseTool]:
     """
     return registry.get_tools_list()
 
-def discover_skills(package_path: str = "src.BMO.skills.collection") -> int:
+def load_manifest() -> int:
     """
-    Convenience function to trigger skill discovery on the global registry.
+    Convenience function to trigger explicit skill registration on the global registry.
     
-    Args:
-        package_path: Dot-notation path to the package containing skills.
-        
     Returns:
-        Number of modules processed.
+        Number of skills registered.
     """
-    return registry.discover_skills(package_path)
+    return registry.load_manifest()
