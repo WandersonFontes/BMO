@@ -35,6 +35,11 @@ class BMOSession:
         Initialize a new BMO session.
         """
         self.session_id: str = session_id or str(uuid.uuid4())
+        
+        # Explicitly load skill registry manifest
+        from src.BMO.skills.registry import load_manifest
+        load_manifest()
+        
         self.supervisor = Supervisor()
         self.message_history: List[BaseMessage] = []
         

@@ -48,37 +48,36 @@ class Planner:
              chain = prompt | self.llm.with_structured_output(ExecutionPlan)
              
              try:
-                 plan = await chain.ainvoke({"input": user_prompt})
+                plan = await chain.ainvoke({"input": user_prompt})
              except Exception as e:
-                 print(f"❌ Structured Output Error: {e}")
-                 # Fallback to standard parsing
-                 fallback_prompt = ChatPromptTemplate.from_messages([
-                    ("system", system_prompt),
-                    ("human", "{input}"),
-                    ("human", "Format instructions:\n{format_instructions}")
-                 ])
-                 chain = fallback_prompt | self.llm
-                 
-                 print(f"⚠️  Falling back to manual parsing due to: {e}")
-                 raw = await chain.ainvoke({
-                     "input": user_prompt,
-                     "format_instructions": self.parser.get_format_instructions()
-                 })
-                 plan = self.parser.parse(raw.content)
-        else:
-             fallback_prompt = ChatPromptTemplate.from_messages([
+                print(f"❌ Structured Output Error: {e}")
+                # Fallback to standard parsing
+                fallback_prompt = ChatPromptTemplate.from_messages([
                 ("system", system_prompt),
                 ("human", "{input}"),
                 ("human", "Format instructions:\n{format_instructions}")
-             ])
-             chain = fallback_prompt | self.llm | self.parser
-             plan = await chain.ainvoke({
-                 "input": user_prompt,
-                 "format_instructions": self.parser.get_format_instructions()
-             })
+                ])
+                chain = fallback_prompt | self.llm
+                
+                print(f"⚠️  Falling back to manual parsing due to: {e}")
+                raw = await chain.ainvoke({
+                    "input": user_prompt,
+                    "format_instructions": self.parser.get_format_instructions()
+                })
+                plan = self.parser.parse(raw.content)
+        else:
+            fallback_prompt = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            ("human", "{input}"),
+            ("human", "Format instructions:\n{format_instructions}")
+            ])
+            chain = fallback_prompt | self.llm | self.parser
+            plan = await chain.ainvoke({
+                "input": user_prompt,
+                "format_instructions": self.parser.get_format_instructions()
+            })
              
         # Normalize plan if needed (structured output returns object, parser returns object)
-
         if not plan.steps:
              return ExecutionPlan(steps=[], strategy_rationale="No actionable steps found.")
         

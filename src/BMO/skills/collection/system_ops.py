@@ -5,7 +5,6 @@ from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field, ValidationError
 
 from src.BMO.skills.base import BMO_skill
-from src.BMO.skills.registry import registry
 
 
 class SystemInfoInput(BaseModel):
@@ -201,7 +200,3 @@ class SystemManagerFilesSkill(BMO_skill):
         if action in ["create", "write"]:
             return handler(path, content)
         return handler(path)
-
-# Auto-register skills with the registry
-registry.register(SystemInfoSkill())
-registry.register(SystemManagerFilesSkill())
